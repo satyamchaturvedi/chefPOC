@@ -1,0 +1,5 @@
+{
+  "name": "default-validator",
+  "validator": true,
+  "public_key": "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA2aqIIOUvTjM80wwMal+G\nDF1jMebTun3eCj9ZNeFt7E5xrGBmBlvyFgpofliYClpJn7MeL0a+wdF2jAU9iazT\nB1N+CZ6flXVM8+b8dreUXC8EHE/Uz0c5VOQuRWHa11aKJq3nyZJB3Cd89Pjc9yvI\nB1lJgMhdIFXSLebCeIc7Q+80VV5UZyFAzOgXVSL9HhOJNEADkRtK39yG5tFyvvus\nJGlmWYErQTK3uSSx8mdWIujV5MJf7CV5jHQ/toK4n5qjxD/Fx0QRAXtYYhY3sfLf\nkmsMBxsZmVK7LvLauzQTi0tSqrpinhwwBPze6AK/6EU01tsR3jIrg7o4KlfeYUEB\nzQIDAQAB\n-----END PUBLIC KEY-----\n\n"
+}
