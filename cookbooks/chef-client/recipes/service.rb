@@ -6,7 +6,7 @@
 # Author:: Seth Chisamore (<schisamo@chef.io>)
 # Author:: Paul Mooring (<paul@chef.io>)
 #
-# Copyright:: 2009-2019, Chef Software, Inc.
+# Copyright:: 2009-2017, Chef Software, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -34,6 +34,9 @@ supported_init_styles = %w(
 
 init_style = node['chef_client']['init_style']
 
-raise "The init style specified at node['chef_client']['init_style'] is not supported by the chef-client cookbook. Supported values are: #{supported_init_styles.join(',')}." unless supported_init_styles.include?(init_style)
-
-include_recipe "chef-client::#{init_style}_service"
+# Services moved to recipes
+if supported_init_styles.include? init_style
+  include_recipe "chef-client::#{init_style}_service"
+else
+  log 'Could not determine service init style, manual intervention required to start up the chef-client service.'
+end

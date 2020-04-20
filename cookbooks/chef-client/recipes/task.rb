@@ -3,7 +3,7 @@
 # Cookbook::  chef
 # Recipe:: task
 #
-# Copyright:: 2011-2019, Chef Software, Inc.
+# Copyright:: 2011-2017, Chef Software, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -23,17 +23,16 @@ class ::Chef::Recipe
   include ::Opscode::ChefClient::Helpers
 end
 
-# create a directory in case the log director does not exist
-directory node['chef_client']['log_dir'] do
-  inherits true
-  recursive true
-  action :create
-end
-
 # libraries/helpers.rb method to DRY directory creation resources
 client_bin = find_chef_client
-Chef::Log.info("Using chef-client binary at #{client_bin}")
+Chef::Log.info("Found chef-client in #{client_bin}")
 node.default['chef_client']['bin'] = client_bin
+
+windows_service 'chef-client' do
+  startup_type :disabled
+  action :configure_startup
+  only_if { ::Win32::Service.exists?('chef-client') }
+end
 
 chef_client_scheduled_task 'Chef Client' do
   user node['chef_client']['task']['user']
@@ -47,12 +46,4 @@ chef_client_scheduled_task 'Chef Client' do
   log_directory node['chef_client']['log_dir']
   chef_binary_path node['chef_client']['bin']
   daemon_options node['chef_client']['daemon_options']
-  task_name node['chef_client']['task']['name']
-end
-
-windows_service 'chef-client' do
-  startup_type :disabled
-  action [:configure_startup, :stop]
-  ignore_failure true
-  only_if { ::Win32::Service.exists?('chef-client') }
 end

@@ -4,7 +4,7 @@
 # Cookbook::  chef-client
 # Attributes:: default
 #
-# Copyright:: 2008-2019, Chef Software Inc.
+# Copyright:: 2008-2017, Chef Software, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the 'License');
 # you may not use this file except in compliance with the License.
@@ -30,8 +30,8 @@ default['chef_client']['config'] = {
   'verify_api_cert' => true,
 }
 
-# Accept the chef license when running the chef service
-default['chef_client']['chef_license'] = nil
+# should the client fork on runs
+default['chef_client']['config']['client_fork'] = true
 
 default['chef_client']['log_file']    = 'client.log'
 default['chef_client']['interval']    = '1800'
@@ -57,12 +57,11 @@ default['chef_client']['cron'] = {
   'append_log' => false,
   'use_cron_d' => false,
   'mailto' => nil,
-  'nice_path' => '/bin/nice',
 }
 
 # Configuration for chef-client::systemd_service recipe
 default['chef_client']['systemd']['timer'] = false
-# Systemd timeout. Might be useful for timer setups to avoid stalled chef runs
+# Systemd timeout. Might be usefull for timer setups to avoid stalled chef runs
 default['chef_client']['systemd']['timeout'] = false
 # Restart mode when not running as a timer
 default['chef_client']['systemd']['restart'] = 'always'
@@ -71,10 +70,9 @@ default['chef_client']['systemd']['restart'] = 'always'
 default['chef_client']['task']['frequency'] = 'minute'
 default['chef_client']['task']['frequency_modifier'] = node['chef_client']['interval'].to_i / 60
 default['chef_client']['task']['user'] = 'SYSTEM'
-default['chef_client']['task']['password'] = nil # Password is only required for non-system users
+default['chef_client']['task']['password'] = nil # Password is only required for none system users
 default['chef_client']['task']['start_time'] = nil
 default['chef_client']['task']['start_date'] = nil
-default['chef_client']['task']['name'] = 'chef-client'
 
 default['chef_client']['load_gems'] = {}
 
@@ -84,6 +82,7 @@ default['chef_client']['config']['exception_handlers'] = []
 
 # If set to false, changes in the `client.rb` template won't trigger a reload
 # of those configs in the current Chef run.
+#
 default['chef_client']['reload_config'] = true
 
 # Any additional daemon options can be set as an array. This will be
@@ -93,10 +92,6 @@ default['chef_client']['daemon_options'] = []
 # Ohai plugins to be disabled are configured in /etc/chef/client.rb,
 # so they can be set as an array in this attribute.
 default['ohai']['disabled_plugins'] = []
-
-# Ohai plugins to be enabled are configured in /etc/chef/client.rb,
-# so they can be set as an array in this attribute.
-default['ohai']['optional_plugins'] = []
 
 # An additional path to load Ohai plugins from.
 default['ohai']['plugin_path'] = nil
@@ -178,7 +173,7 @@ default['chef_client']['log_rotation']['options'] = ['compress']
 default['chef_client']['log_rotation']['prerotate'] = nil
 default['chef_client']['log_rotation']['postrotate'] =  case node['chef_client']['init_style']
                                                         when 'systemd'
-                                                          node['chef_client']['systemd']['timer'] ? '' : 'systemctl reload chef-client.service >/dev/null || :'
+                                                          'systemctl reload chef-client.service >/dev/null || :'
                                                         when 'upstart'
                                                           'initctl reload chef-client >/dev/null || :'
                                                         else
