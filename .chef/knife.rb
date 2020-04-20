@@ -7,3 +7,4 @@ validation_client_name   "default-validator"
 validation_key           ::File.join(current_dir, "default-validator.pem")
 chef_server_url          "https://chef-ip-dns.eastus.cloudapp.azure.com/organizations/default"
 cookbook_path            [::File.join(current_dir, "../cookbooks")]
+knife[:editor] = "vim"
