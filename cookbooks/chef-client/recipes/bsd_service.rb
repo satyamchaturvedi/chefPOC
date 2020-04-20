@@ -8,11 +8,13 @@ end
 
 # libraries/helpers.rb method to DRY directory creation resources
 client_bin = find_chef_client
-Chef::Log.debug("Using chef-client binary at #{client_bin}")
+Chef::Log.debug("Found chef-client in #{client_bin}")
 node.default['chef_client']['bin'] = client_bin
 create_chef_directories
 
-if platform_family?('freebsd')
+case node['platform_family']
+when 'freebsd'
+
   directory '/etc/rc.conf.d' do
     owner 'root'
     group 'wheel'

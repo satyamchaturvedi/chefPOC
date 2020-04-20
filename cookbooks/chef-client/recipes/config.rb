@@ -5,7 +5,7 @@
 # Cookbook::  chef-client
 # Recipe:: config
 #
-# Copyright:: 2008-2019, Chef Software, Inc.
+# Copyright:: 2008-2017, Chef Software, Inc.
 # Copyright:: 2009-2017, 37signals
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -28,7 +28,7 @@ end
 # chef_node_name = Chef::Config[:node_name] == node['fqdn'] ? false : Chef::Config[:node_name]
 
 if node['chef_client']['log_file'].is_a?(String)
-  log_path = ::File.join(node['chef_client']['log_dir'], node['chef_client']['log_file'])
+  log_path = File.join(node['chef_client']['log_dir'], node['chef_client']['log_file'])
   node.default['chef_client']['config']['log_location'] = log_path
 
   if node['os'] == 'linux'
@@ -49,14 +49,8 @@ end
 # libraries/helpers.rb method to DRY directory creation resources
 create_chef_directories
 
-# We need to set these local variables because the methods aren't
-# available in the Chef::Resource scope
-d_owner = root_owner
-
-if log_path != 'STDOUT'
+if log_path != 'STDOUT' # ~FC023
   file log_path do
-    owner d_owner
-    group node['root_group']
     mode node['chef_client']['log_perm']
   end
 end
@@ -77,6 +71,10 @@ node['chef_client']['load_gems'].each do |gem_name, gem_info_hash|
   chef_requires.push(gem_info_hash[:require_name] || gem_name)
 end
 
+# We need to set these local variables because the methods aren't
+# available in the Chef::Resource scope
+d_owner = root_owner
+
 template "#{node['chef_client']['conf_dir']}/client.rb" do
   source 'client.rb.erb'
   owner d_owner
@@ -86,11 +84,9 @@ template "#{node['chef_client']['conf_dir']}/client.rb" do
     chef_config: node['chef_client']['config'],
     chef_requires: chef_requires,
     ohai_disabled_plugins: node['ohai']['disabled_plugins'],
-    ohai_optional_plugins: node['ohai']['optional_plugins'],
     start_handlers: node['chef_client']['config']['start_handlers'],
     report_handlers: node['chef_client']['config']['report_handlers'],
-    exception_handlers: node['chef_client']['config']['exception_handlers'],
-    chef_license: node['chef_client']['chef_license']
+    exception_handlers: node['chef_client']['config']['exception_handlers']
   )
 
   if node['chef_client']['reload_config']

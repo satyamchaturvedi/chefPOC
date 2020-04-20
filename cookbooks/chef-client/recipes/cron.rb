@@ -5,7 +5,7 @@
 # Cookbook::  chef-client
 # Recipe:: cron
 #
-# Copyright:: 2009-2019, Chef Software Inc.
+# Copyright:: 2009-2017, Chef Software Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -94,6 +94,7 @@ if node['chef_client']['splay'].to_i > 0
 else
   sleep_time = nil
 end
+env        = node['chef_client']['cron']['environment_variables']
 log_file   = node['chef_client']['cron']['log_file']
 append_log = node['chef_client']['cron']['append_log'] ? '>>' : '>'
 daemon_options = " #{node['chef_client']['daemon_options'].join(' ')} " if node['chef_client']['daemon_options'].any?
@@ -114,19 +115,12 @@ if node['chef_client']['cron']['use_cron_d']
     user    'root'
     cmd = ''
     cmd << "/bin/sleep #{sleep_time}; " if sleep_time
-    cmd << "#{env_vars} " if env_vars?
-    cmd << "#{node['chef_client']['cron']['nice_path']} -n #{process_priority} " if process_priority
-    cmd << "#{client_bin} #{daemon_options}#{append_log} #{log_file} 2>&1 "
-    cmd << '|| echo "Chef client execution failed"' if node['chef_client']['cron']['mailto']
+    cmd << "#{env} #{client_bin} #{daemon_options}#{append_log} #{log_file} 2>&1"
     command cmd
   end
 else
-  # Non-linux platforms don't support cron.d so we won't try to remove a cron_d resource.
-  # https://github.com/chef-cookbooks/cron/blob/master/resources/d.rb#L55
-  if node['os'] == 'linux'
-    cron_d 'chef-client' do
-      action :delete
-    end
+  cron_d 'chef-client' do
+    action :delete
   end
 
   cron 'chef-client' do
@@ -138,10 +132,7 @@ else
     user    'root'
     cmd = ''
     cmd << "/bin/sleep #{sleep_time}; " if sleep_time
-    cmd << "#{env_vars} " if env_vars?
-    cmd << "#{node['chef_client']['cron']['nice_path']} -n #{process_priority} " if process_priority
-    cmd << "#{client_bin} #{daemon_options}#{append_log} #{log_file} 2>&1 "
-    cmd << '|| echo "Chef client execution failed"' if node['chef_client']['cron']['mailto']
+    cmd << "#{env} #{client_bin} #{daemon_options}#{append_log} #{log_file} 2>&1"
     command cmd
   end
 end

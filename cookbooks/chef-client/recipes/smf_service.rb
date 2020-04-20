@@ -5,7 +5,7 @@ end
 
 # libraries/helpers.rb method to DRY directory creation resources
 client_bin = find_chef_client
-Chef::Log.debug("Using chef-client binary at #{client_bin}")
+Chef::Log.debug("Found chef-client in #{client_bin}")
 node.default['chef_client']['bin'] = client_bin
 create_chef_directories
 
@@ -27,7 +27,7 @@ template "#{node['chef_client']['method_dir']}/chef-client" do
 end
 
 template(local_path + 'chef-client.xml') do
-  if node['platform_version'].to_f >= 5.11 && !platform?('smartos')
+  if node['platform_version'].to_f >= 5.11 && node['platform'] != 'smartos'
     source 'solaris/manifest-5.11.xml.erb'
   else
     source 'solaris/manifest.xml.erb'

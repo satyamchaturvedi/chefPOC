@@ -16,19 +16,20 @@ This cookbook is used to configure a system as a Chef Client.
 - Mac OS X
 - openSUSE
 - SLES 12+
-- RHEL
+- RHEL 5+
 - Solaris 10+
 - Ubuntu
 - Windows 2008 R2+
 
 ### Chef
 
-- Chef 13.0+
+- Chef 12.1+
 
-### Cookbooks
+### Dependent Cookbooks
 
 - cron 2.0+
 - logrotate 1.9.0+
+- windows 2.0+
 
 See [USAGE](#usage).
 
@@ -42,7 +43,7 @@ The following attributes affect the behavior of the chef-client program when run
 - `node['chef_client']['log_dir']` - Sets directory used to store chef-client logs. Default "/var/log/chef".
 - `node['chef_client']['log_rotation']['options']` - Set options to logrotation of chef-client log file. Default `['compress']`.
 - `node['chef_client']['log_rotation']['prerotate']` - Set prerotate action for chef-client logrotation. Default to `nil`.
-- `node['chef_client']['log_rotation']['postrotate']` - Set postrotate action for chef-client logrotation. Default to chef-client service reload depending on init system. It should be empty to skip reloading chef-client service in case if `node['chef_client']['systemd']['timer']` is true.
+- `node['chef_client']['log_rotation']['postrotate']` - Set postrotate action for chef-client logrotation. Default to chef-client service reload depending on init system.
 - `node['chef_client']['conf_dir']` - Sets directory used via command-line option to a location where chef-client search for the client config file . Default "/etc/chef".
 - `node['chef_client']['bin']` - Sets the full path to the `chef-client` binary. Mainly used to set a specific path if multiple versions of chef-client exist on a system or the bin has been installed in a non-sane path. Default "/usr/bin/chef-client".
 - `node['chef_client']['ca_cert_path']` - Sets the full path to the PEM-encoded certificate trust store used by `chef-client` when daemonized. If not set, [default values](https://docs.chef.io/chef_client_security.html#ssl-cert-file) are used.
@@ -54,26 +55,24 @@ The following attributes affect the behavior of the chef-client program when run
 - `node['chef_client']['cron']['append_log']` - Whether to append to the log. Default: `false` chef-client output.
 - `node['chef_client']['cron']['use_cron_d']` - If true, use the [`cron_d` resource](https://github.com/chef-cookbooks/cron). If false (default), use the cron resource built-in to Chef.
 - `node['chef_client']['cron']['mailto']` - If set, `MAILTO` env variable is set for cron definition
-- `node['chef_client']['cron']['priority']` - If set, defines the scheduling priority for the `chef-client` process. MUST be a value between -20 and 19\. ONLY applies to \*nix-style operating systems.
 - `node['chef_client']['reload_config']` - If true, reload Chef config of current Chef run when `client.rb` template changes (defaults to true)
 - `node['chef_client']['daemon_options']` - An array of additional options to pass to the chef-client service, empty by default, and must be an array if specified.
 - `node['chef_client']['systemd']['timer']` - If true, uses systemd timer to run chef frequently instead of chef-client daemon mode (defaults to false). This only works on platforms where systemd is installed and used.
 - `node['chef_client']['systemd']['timeout']` - If configured, sets the systemd timeout. This might be useful to avoid stalled chef runs in the systemd timer setup.
 - `node['chef_client']['systemd']['restart']` - The string to use for systemd `Restart=` value when not running as a timer. Defaults to `always`. Other possible options: `no, on-success, on-failure, on-abnormal, on-watchdog, on-abort`.
-- `node['chef_client']['systemd']['killmode']` - If configured, the string to use for the systemd `KillMode=` value. This determines how PIDs spawned by the chef-client process are handled when chef-client PID stops. Options: `control-group, process, mixed, none`. Systemd defaults to `control-group` when this is not specified. More information can be found on the [systemd.kill man page](https://www.freedesktop.org/software/systemd/man/systemd.kill.html).
 - `node['chef_client']['task']['frequency']` - Frequency with which to run the `chef-client` scheduled task (e.g., `'hourly'`, `'daily'`, etc.) Default is `'minute'`.
 - `node['chef_client']['task']['frequency_modifier']` - Numeric value to go with the scheduled task frequency. Default is `node['chef_client']['interval'].to_i / 60`
 - `node['chef_client']['task']['start_time']` - The start time for the task in `HH:mm` format (ex: 14:00). If the `frequency` is `minute` default start time will be `Time.now` plus the `frequency_modifier` number of minutes.
 - `node['chef_client']['task']['start_date']` - The start date for the task in `m:d:Y` format (ex: 12/17/2017). nil by default and isn't necessary if you're running a regular interval.
 - `node['chef_client']['task']['user']` - The user the scheduled task will run as, defaults to `'SYSTEM'`.
 - `node['chef_client']['task']['password']` - The password for the user the scheduled task will run as, defaults to `nil` because the default user, `'SYSTEM'`, does not need a password.
-- `node['chef_client']['task']['name']` - The name of the scheduled task, defaults to `chef-client`.
 
 The following attributes are set on a per-platform basis, see the `attributes/default.rb` file for default values.
 
 - `node['chef_client']['init_style']` - Sets up the client service based on the style of init system to use. Default is based on platform and falls back to `'none'`. See [service recipes](#service-recipes).
 - `node['chef_client']['run_path']` - Directory location where chef-client should write the PID file. Default based on platform, falls back to "/var/run".
-- `node['chef_client']['cache_path']` - Directory location for `Chef::Config[:file_cache_path]` where chef-client will cache various files. Default is based on platform, falls back to "/var/chef/cache".
+- `node['chef_client']['cache_path']` - Directory location for
+- `Chef::Config[:file_cache_path]` where chef-client will cache various files. Default is based on platform, falls back to "/var/chef/cache".
 - `node['chef_client']['backup_path']` - Directory location for `Chef::Config[:file_backup_path]` where chef-client will backup templates and cookbook files. Default is based on platform, falls back to "/var/chef/backup".
 - `node['chef_client']['launchd_mode']` - (Only for Mac OS X) if set to `'daemon'`, runs chef-client with `-d` and `-s` options; defaults to `'interval'`.
 - When `chef_client['log_file']` is set and running on a [logrotate](https://supermarket.chef.io/cookbooks/logrotate) supported platform (debian, rhel, fedora family), use the following attributes to tune log rotation.
@@ -86,14 +85,12 @@ This cookbook makes use of attribute-driven configuration with this attribute. S
 - `node['chef_client']['config']` - A hash of Chef::Config keys and their values, rendered dynamically in `/etc/chef/client.rb`.
 - `node['chef_client']['load_gems']` - Hash of gems to load into chef via the client.rb file
 - `node['ohai']['disabled_plugins']` - An array of ohai plugins to disable, empty by default, and must be an array if specified. Ohai 6 plugins should be specified as a string (ie. "dmi"). Ohai 7+ plugins should be specified as a symbol within quotation marks (ie. ":Passwd").
-- `node['ohai']['optional_plugins']` - An array of optional ohai plugins to enable, empty by default, and must be an array if specified. Ohai 6 plugins should be specified as a string (ie. "dmi"). Ohai 7+ plugins should be specified as a symbol within quotation marks (ie. ":Passwd").
 - `node['ohai']['plugin_path']` - An additional path to load Ohai plugins from. Necessary if you use the ohai_plugin resource in the Ohai cookbook to install your own ohai plugins.
 
 ### Chef Client Config
 
 [For the most current information about Chef Client configuration, read the documentation.](https://docs.chef.io/config_rb_client.html).
 
-- `node['chef_client']['chef_license']` - Set to 'accept' or 'accept-no-persist' to accept the [license](https://docs.chef.io/chef_license.html) before upgrading to Chef 15.
 - `node['chef_client']['config']['chef_server_url']` - The URL for the Chef server.
 - `node['chef_client']['config']['validation_client_name']` - The name of the chef-validator key that is used by the chef-client to access the Chef server during the initial chef-client run.
 - `node['chef_client']['config']['verbose_logging']` - Set the log level. Options: true, nil, and false. When this is set to false, notifications about individual resources being processed are suppressed (and are output at the :info logging level). Setting this to false can be useful when a chef-client is run as a daemon. Default value: nil.
@@ -129,7 +126,7 @@ Use this recipe on systems that should have a `chef-client` daemon running, such
 
 ### default
 
-Includes the `chef-client::service` recipe by default on \*nix platforms and the task recipe for Windows hosts.
+Includes the `chef-client::service` recipe by default on *nix platforms and the task recipe for Windows hosts.
 
 ### delete_validation
 
@@ -148,8 +145,6 @@ Use this recipe to run chef-client on Windows nodes as a scheduled task. Without
 Use the recipes as described above to configure your systems to run Chef as a service via cron / scheduled task or one of the service management systems supported by the recipes.
 
 The `chef-client::config` recipe is only _required_ with init style `init` (default setting for the attribute on debian/redhat family platforms, because the init script doesn't include the `pid_file` option which is set in the config.
-
-If you wish to accept the [Chef license](https://docs.chef.io/chef_license.html) before upgrading to Chef 15 you must use the `chef-client::config` recipe or set the `chef_license` value in your config manually. See [Accepting the Chef license](https://docs.chef.io/chef_license_accept.html) for more details or other ways to accept the license.
 
 The config recipe is used to dynamically generate the `/etc/chef/client.rb` config file. The template walks all attributes in `node['chef_client']['config']` and writes them out as key:value pairs. The key should be the configuration directive. For example, the following attributes (in a role):
 
@@ -191,68 +186,6 @@ default_attributes(
   }
 )
 ```
-
-### Special Behavior
-
-Because attributes are strings and the `/etc/chef/client.rb` can use settings that are not string, such as symbols, some configuration attributes have resulting lines with special behavior:
-
-* the `audit_mode`, `log_level`, and `ssl_verify_mode` attributes are converted to symbols. The attribute need not include an initial colon. For example:
-
-```ruby
-default_attributes(
-  "chef_client" => {
-    "config" => {
-      "ssl_verify_mode" => ":verify_peer",
-      "log_level" => "debug"
-    }
-  }
-)
-```
-
-will render the following configuration (`/etc/chef/client.rb`):
-
-```ruby
-ssl_verify_mode :verify_peer
-log_level :debug
-```
-
-* the `log_level` setting can be either a string representing a file path or one of the symbols `STDOUT`, `STDERR`, `:syslog`, and `:win_evt`. If the `log_level` attribute is a string suggestive of one of these symbols, the resulting configuration line will use the symbol. For example,
-
-```ruby
-default_attributes(
-  "chef_client" => {
-    "config" => {
-      "log_location" => "STDOUT"
-    }
-  }
-)
-```
-
-will render the following configuration (`/etc/chef/client.rb`):
-
-```ruby
-log_location STDOUT
-```
-
-and
-
-```ruby
-default_attributes(
-  "chef_client" => {
-    "config" => {
-      "log_location" => ":syslog"
-    }
-  }
-)
-```
-
-will render the following configuration (`/etc/chef/client.rb`):
-
-```ruby
-log_location :syslog
-```
-
-The strings "syslog" and "win_evt" will become the symbols `:syslog` and `:win_evt` regardless of whether they have an initial colon.
 
 ### Configuration Includes
 
@@ -388,7 +321,6 @@ The chef_client_scheduled_task setups up chef-client to run as a scheduled task.
 - `log_directory` - The path to the Chef log directory. default: 'CONFIG_DIRECTORY/log'
 - `chef_binary_path` - The path to the chef-client binary. default: 'C:/opscode/chef/bin/chef-client'
 - `daemon_options` - An optional array of extra options to pass to the chef-client
-- `task_name` - The name of the scheduled task. This allows for multiple chef_client_scheduled_task resources when it is used directly like in a wrapper cookbook. default: 'chef-client'
 
 ## Maintainers
 
